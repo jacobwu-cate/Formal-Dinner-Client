@@ -8,23 +8,6 @@
 
 import SwiftUI
 
-struct Person: Decodable, Hashable, Identifiable {
-    public var name: String
-    public var id: Int
-    public var timesServed: Int
-    public var haveMet: [Int]
-    public var previousAssignments: [String]
-    public var currentAssignment: String
-    enum CodingKeys: String, CodingKey {
-       case name = "Name"
-       case id = "Id"
-       case timesServed = "TimesServed"
-       case haveMet = "HaveMet"
-       case previousAssignments = "PreviousAssignments"
-       case currentAssignment = "CurrentAssignment"
-    }
-}
-
 struct ContentView: View { // Main window
     //MARK: - Properties
     @State var selectedView: Int = 2 // Controls which view is displayed
@@ -42,18 +25,18 @@ struct ContentView: View { // Main window
             NavigationView {
                 VStack {
                     List {
-                        ForEach((1...31), id: \.self) { tableNo in
+                        ForEach(networkDaemon.tables, id: \.self) { table in // For every table
                             HStack {
-                                Button(action: {
+                                Button(action: { // Add a clickable list item
                                     self.showingDetail.toggle()
                                 }) {
                                     HStack {
-                                        Image(systemName: "\(tableNo).circle.fill")
-                                        Text("Table \(tableNo)")
+                                        Image(systemName: "\(table.id).circle.fill")
+                                        Text("Table \(table.id)")
                                     }
                                 }.sheet(isPresented: self.$showingDetail) {
-                                    DetailTableView(tableNo: tableNo, people: self.networkDaemon.people)
-                                }
+                                    DetailTableView(withInfo: table)
+                                } // If clicked -- pass information to DetailTableView
                             }
                         }
                     }
@@ -117,17 +100,16 @@ struct ContentView: View { // Main window
                             .foregroundColor(Color(.systemBlue))
                         }
                     } // Search Bar + Cancel Button
-                    .padding(.horizontal)
+                        .padding(.horizontal)
                         .navigationBarHidden(true)
-                    List {
-                        ForEach(networkDaemon.people.filter{$0.name.hasPrefix(searchText) || searchText == ""}, id:\.self) { person in
-                            Button(action: {
-                                self.showingDetail.toggle()
-                            }) {
-                                HStack {
-                                    Image(systemName: "\(person.name.prefix(1).lowercased()).square.fill")
-                                    Text(person.name)
-                                }
+                    List { ForEach(networkDaemon.people.filter{$0.name.contains(searchText) || $0.currentAssignment.contains(searchText) || String($0.id) == searchText || searchText == ""}, id:\.self) { person in
+                        Button(action: {
+                            self.showingDetail.toggle()
+                        }) {
+                            HStack {
+                                Image(systemName: "\(person.name.prefix(1).lowercased()).square.fill")
+                                Text(person.name)
+                            }
                             }.sheet(isPresented: self.$showingDetail) {
                                 DetailPersonView(withInfo: person)
                             }
@@ -150,17 +132,16 @@ struct ContentView_Previews: PreviewProvider {
 
 struct DetailTableView: View { // Popup table information
     @Environment(\.presentationMode) var presentationMode
-    var tableNo: Int
-    var people: [Person]
+    var withInfo: Table
     var body: some View {
         ZStack{
             Button(action: {
                 self.presentationMode.wrappedValue.dismiss()
             }) {Color(.clear)} // Click any white space to dismiss sheet
             VStack{
-                Text("Table \(tableNo)").font(.largeTitle)
-                ForEach(people.filter{$0.currentAssignment == "Table \(tableNo)"}, id: \.self) { person in
-                    Text(person.name)
+                Text("Table \(withInfo.id)").font(.largeTitle)
+                ForEach(withInfo.occupants, id: \.self) { occupant in
+                    Text(occupant.name)
                 }
             }
         }
