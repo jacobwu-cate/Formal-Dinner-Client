@@ -1,6 +1,6 @@
 // Formal Dinner Sorter
 // Jacob Wu
-// 02.09.2020
+// 02.19.2020
 
 package main
 
@@ -239,7 +239,7 @@ func sortPeopleByName() {
 
 // Above include substantive reference to golang - sort package website //
 
-func handler(w http.ResponseWriter, r *http.Request) {
+func peopleHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("\n\nIncoming Request: ") // Print info
 	fmt.Println("Method: ", r.Method, " ", r.URL)
 
@@ -254,14 +254,37 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("  > ", line, ":", r.Header.Get(line))
 	} // Show Client Headers
 	
-	jsonString := string(encodeJSON())
+	jsonString := string(encodeJSON("people"))
 	fmt.Fprintf(w, jsonString) // Answer the Client request
 } // From PowerSchool Site, McF.
- 
-func encodeJSON() []byte {
-	peopleJSON, _ := json.Marshal(people)
-	// tablesJSON, _ := json.Marshal(tables)
-	return peopleJSON//, tablesJSON
+
+func tablesHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("\n\nIncoming Request: ") // Print info
+	fmt.Println("Method: ", r.Method, " ", r.URL)
+
+	headerKeys := make([]string, len(r.Header)) // Placeholder
+	i := 0
+	for k := range r.Header {
+		headerKeys[i] = k
+		i++
+	} // Get specific information
+	
+	for _, line := range headerKeys {
+		fmt.Println("  > ", line, ":", r.Header.Get(line))
+	} // Show Client Headers
+	
+	jsonString := string(encodeJSON("tables"))
+	fmt.Fprintf(w, jsonString) // Answer the Client request
+} // From PowerSchool Site, McF.
+
+func encodeJSON(whichData string) []byte {
+	if whichData == "people" {
+		peopleJSON, _ := json.Marshal(people)
+		return peopleJSON
+	} else {
+		tablesJSON, _ := json.Marshal(tables)
+		return tablesJSON
+	}
 } // http://www.cihanozhan.com/converting-csv-data-to-json-with-golang/
 
 func main() {
@@ -269,6 +292,8 @@ func main() {
   if printDetailsForDebug { fmt.Print(people, "\n\n") }
 
 	for i := 1; i<=3; i++ {
+	  resetVariables()
+		
 		shuffleStudents()
   	sortTables()
 
@@ -286,15 +311,13 @@ func main() {
 			}
 		}
 		
-		fmt.Print(string(encodeJSON()))
-	  resetVariables()
 	}
 	writeMasterCSV()
 	exportCSV("Master")
 
-	
   // setupRoutes()
-	http.HandleFunc("/", handler)
+	http.HandleFunc("/people", peopleHandler)
+	http.HandleFunc("/tables", tablesHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
